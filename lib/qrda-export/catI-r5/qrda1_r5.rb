@@ -42,7 +42,6 @@ class Qrda1R5 < Mustache
     )]
     JSON.parse(@patient_telecom_option.to_json)
   end
-
   def patient_email
     return unless @patient_email_option
     telecom_email = [CQM::Telecom.new(
@@ -51,7 +50,6 @@ class Qrda1R5 < Mustache
     )]
     JSON.parse(telecom_email.to_json)
   end
-
   def patient_characteristic_payer
     JSON.parse(@qdmPatient.get_data_elements('patient_characteristic', 'payer').to_json)
   end
