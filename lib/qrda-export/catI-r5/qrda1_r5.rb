@@ -16,6 +16,7 @@ class Qrda1R5 < Mustache
     @provider = options[:provider]
     @patient_address_option = options[:patient_addresses]
     @patient_telecom_option = options[:patient_telecoms]
+    @patient_emails_option = options[:patient_emails]
     @performance_period_start = options[:start_time]
     @performance_period_end = options[:end_time]
     @submission_program = options[:submission_program]
@@ -41,7 +42,11 @@ class Qrda1R5 < Mustache
     )]
     JSON.parse(@patient_telecom_option.to_json)
   end
-
+  def patient_emails
+    if @patient_emails_option
+      JSON.parse(@patient_emails_option.to_json)
+    end
+  end
   def patient_characteristic_payer
     JSON.parse(@qdmPatient.get_data_elements('patient_characteristic', 'payer').to_json)
   end
