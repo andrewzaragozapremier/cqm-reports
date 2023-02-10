@@ -21,6 +21,9 @@
     {{#patient_telecoms}}
       <telecom use="{{use}}" value="tel:{{value}}"/>
     {{/patient_telecoms}}
+     {{#patient_emails}}
+      <telecom use="" value="mailto:{{value}}"/>
+    {{/patient_emails}}
     <patient>
       {{#patient}}
         <name>
