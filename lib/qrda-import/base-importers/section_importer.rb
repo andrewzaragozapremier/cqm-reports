@@ -207,7 +207,6 @@ module QRDA
             end
           end
           return value.strip.to_f if unitless?(value_element)
-
           return QDM::Quantity.new(value.strip.to_f, value_element['unit'])
         elsif value_element['code'].present?
           return code_if_present(value_element)
