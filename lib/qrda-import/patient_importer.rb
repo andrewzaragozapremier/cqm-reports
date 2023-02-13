@@ -25,7 +25,6 @@ module QRDA
         @data_element_importers << DiagnosticStudyPerformedImporter.new
         @data_element_importers << DiagnosticStudyRecommendedImporter.new
         @data_element_importers << EncounterOrderImporter.new
-        @data_element_importers << EncounterPerformedImporter.new
         @data_element_importers << EncounterRecommendedImporter.new
         @data_element_importers << FamilyHistoryImporter.new
         @data_element_importers << ImmunizationAdministeredImporter.new
@@ -38,7 +37,6 @@ module QRDA
         @data_element_importers << LaboratoryTestRecommendedImporter.new
         @data_element_importers << MedicationActiveImporter.new
         @data_element_importers << MedicationAdministeredImporter.new
-        @data_element_importers << MedicationDischargeImporter.new
         @data_element_importers << MedicationDispensedImporter.new
         @data_element_importers << MedicationOrderImporter.new
         @data_element_importers << PatientCareExperienceImporter.new
@@ -61,14 +59,16 @@ module QRDA
       end 
 
       def parse_cat1(doc)
+        add_conditional_importers(doc)
         patient = CQM::Patient.new
         warnings = []
         codes = Set.new
         codes_modifiers = {}
         entry_id_map = {}
         import_data_elements(patient, doc, entry_id_map, codes, codes_modifiers, warnings)
-        normalize_references(patient, entry_id_map)
+        normalize_references(patient, entry_id_map, warnings)
         get_demographics(patient, doc, codes)
+        remove_conditional_importers(doc)
         [patient, warnings, codes, codes_modifiers]
       end
 
@@ -80,9 +80,19 @@ module QRDA
           data_elements, id_map = importer.create_entries(context, nrh)
           new_data_elements = []
 
-          id_map.each_value do |elem_ids|
-            elem_id = elem_ids.first
+          id_map.each_pair do |key, elem_ids|
+            split_id = key.split('***')
+            id_string = "#{split_id[1]}(root), #{split_id[0]}(extension)"
+            warnings << ValidationError.new(message: "Two or more entries share the Id: #{id_string}.") if elem_ids.length > 1
+            elem_id = elem_ids.last
             data_element = data_elements.find { |de| de.id == elem_id }
+
+            # If a data_element isn't returned, there was an issue parsing the template, provide a warning
+            if data_element.nil?
+              warnings << ValidationError.new(message: "Error parsing template with Id: #{id_string}.")
+              next
+            end
+
             # Keep the first element with a shared ID
             new_data_elements << data_element
 
@@ -94,7 +104,7 @@ module QRDA
             unique_element_keys << key_elements_for_determining_encounter_uniqueness(data_element)
 
             # Loop through all other data elements with the same id
-            elem_ids[1,elem_ids.length].each do |dup_id|
+            elem_ids[0,elem_ids.length - 1].each do |dup_id|
               dup_element = data_elements.find { |de| de.id == dup_id }
               dup_element_keys = key_elements_for_determining_encounter_uniqueness(dup_element)
               # See if a previously selected data element shared all of the keys files
@@ -134,13 +144,43 @@ module QRDA
         record.deathdate = DateTime.parse(entry_elements.at_xpath("./cda:effectiveTime/cda:low")['value']).to_i
       end
 
-      def normalize_references(patient, entry_id_map)
+      def add_conditional_importers(doc)
+        if doc.at_xpath('/cda:ClinicalDocument/cda:templateId[@root="2.16.840.1.113883.10.20.24.1.2" and @extension="2021-08-01"]').nil?
+          # For imports prior to R53
+          @data_element_importers << DeviceAppliedR52Importer.new
+          @data_element_importers << EncounterPerformedR52Importer.new
+          @data_element_importers << MedicationDischargeR52Importer.new
+        else
+          @data_element_importers << EncounterPerformedImporter.new
+          @data_element_importers << MedicationDischargeImporter.new
+        end
+      end
+
+      def remove_conditional_importers(doc)
+        if doc.at_xpath('/cda:ClinicalDocument/cda:templateId[@root="2.16.840.1.113883.10.20.24.1.2" and @extension="2021-08-01"]').nil?
+          # For imports prior to R53
+          @data_element_importers.delete_if { |dei| dei.is_a?(QRDA::Cat1::DeviceAppliedR52Importer) }
+          @data_element_importers.delete_if { |dei| dei.is_a?(QRDA::Cat1::EncounterPerformedR52Importer) }
+          @data_element_importers.delete_if { |dei| dei.is_a?(QRDA::Cat1::MedicationDischargeR52Importer) }
+        else
+          @data_element_importers.delete_if { |dei| dei.is_a?(QRDA::Cat1::EncounterPerformedImporter) }
+          @data_element_importers.delete_if { |dei| dei.is_a?(QRDA::Cat1::MedicationDischargeImporter) }
+        end
+      end
+
+      def normalize_references(patient, entry_id_map, warnings)
         patient.qdmPatient.dataElements.each do |data_element|
           next unless data_element.respond_to?(:relatedTo) && data_element.relatedTo
 
           relations_to_add = []
           data_element.relatedTo.each do |related_to|
-            relations_to_add += entry_id_map["#{related_to['value']}_#{related_to['namingSystem']}"]
+            relation_to_add = entry_id_map["#{related_to['value']}***#{related_to['namingSystem']}"]
+            # Add the relation if it can be found, otherwise return a warning
+            relations_to_add += relation_to_add unless relation_to_add.nil?
+            if relation_to_add.nil?
+              id_warning_str = "Related To Id: #{related_to['namingSystem']}(root), #{related_to['value']}(extension) cannot be found in QRDA file."
+              warnings << ValidationError.new(message: id_warning_str)
+            end
           end
           data_element.relatedTo = relations_to_add.map(&:to_s)
         end
