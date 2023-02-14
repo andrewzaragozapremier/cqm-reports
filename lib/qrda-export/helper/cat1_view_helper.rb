@@ -97,7 +97,6 @@ module Qrda
           else
             unit ? "<value xsi:type=\"PQ\" value=\"#{f}\" unit=\"#{unit}\"/>" : "<value xsi:type=\"REAL\" value=\"#{f}\"/>"
           end
-          return "<value xsi:type=\"PQ\" value=\"#{result['value']}\" unit=\"#{result['unit']}\"/>" if result['unit'] && result['unit'] != ''
         end
 
         def authordatetime_or_dispenserid?

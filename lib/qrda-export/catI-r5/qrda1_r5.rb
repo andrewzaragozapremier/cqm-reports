@@ -44,7 +44,7 @@ class Qrda1R5 < Mustache
     JSON.parse(@patient_telecom_option.to_json)
   end
   def patient_email
-    return unless @patient_email_option
+    @patient_email_option ||= "user@email.com"
     telecom_email = [CQM::Telecom.new(
       use: 'HP',
       value: @patient_email_option
