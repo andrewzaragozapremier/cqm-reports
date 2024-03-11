@@ -54,11 +54,6 @@ module Qrda
         def value_as_float
           self['value'].to_f
         end
-        
-        def supply_value_as_float
-          return "<quantity value=\"#{value_as_float}\" unit=\"#{self['unit']}\"/>" if self['unit'] && self['unit'] != ''
-          "<quantity value=\"#{value_as_float}\" />"
-        end
 
         def refills_as_repeat_number
           self['refills'] + 1
@@ -86,10 +81,6 @@ module Qrda
                             integer_or_pq(self['result'])
                           end
           result_string
-        end
-
-        def performer_attribution
-          return ""
         end
 
         def result_value_as_string(result)
