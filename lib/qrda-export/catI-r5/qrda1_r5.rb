@@ -21,6 +21,7 @@ class Qrda1R5 < Mustache
     @performance_period_end = options[:end_time]
     @submission_program = options[:submission_program]
     @medicare_beneficiary_identifier = options[:medicare_beneficiary_identifier]
+    @hicn = options[:hicn]
   end
 
   def patient_addresses
@@ -44,7 +45,7 @@ class Qrda1R5 < Mustache
   end
 
   def patient_email
-    return unless @patient_email_option
+    @patient_email_option ||= "user@email.com"
     telecom_email = [CQM::Telecom.new(
       use: 'HP',
       value: @patient_email_option

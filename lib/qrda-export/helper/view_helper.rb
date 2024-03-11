@@ -26,6 +26,9 @@ module Qrda
         def medicare_beneficiary_identifier
           @medicare_beneficiary_identifier
         end
+         def hicn
+            @hicn
+         end
       end
     end
   end
