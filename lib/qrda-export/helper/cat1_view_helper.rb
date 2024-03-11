@@ -83,6 +83,10 @@ module Qrda
           result_string
         end
 
+        def performer_attribution
+          return ""
+        end        
+
         def result_value_as_string(result)
           return "<value xsi:type=\"CD\" nullFlavor=\"UNK\"/>" unless result
           oid = result['system'] || result['codeSystem']
