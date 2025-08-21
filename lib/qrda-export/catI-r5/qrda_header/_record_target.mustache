@@ -33,7 +33,9 @@
       {{/patient}}
       {{#patient_characteristic_sex}}
         {{#dataElementCodes}}
-          <administrativeGenderCode {{> _code}}/>
+          <administrativeGenderCode nullFlavor="OTH">
+              <translation {{> _code}}/>
+            </administrativeGenderCode>
         {{/dataElementCodes}}
       {{/patient_characteristic_sex}}
       {{^patient_characteristic_sex}}
