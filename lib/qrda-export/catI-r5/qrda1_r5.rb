@@ -32,7 +32,7 @@ class Qrda1R5 < Mustache
   end
 
   def authoring_system
-    @authoring_system || 'TestSystem'
+    @authoring_system || 'Cypress'
   end
 
   def patient_addresses
